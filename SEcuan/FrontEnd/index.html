@@ -81,11 +81,11 @@
         {
           id: 1,
           name: "Genshin Impact",
-          image: "/src/Genshin.png",
+          image: "./src/Genshin.png",
           badge: "POPULAR",
           badgeColor: "bg-red-600",
-          backgroundImage: "/src/BG_Genshin.png",
-          characterImage: "/src/Character_Genshin.png",
+          backgroundImage: "./src/BG_Genshin.png",
+          characterImage: "./src/Character_Genshin.png",
           characterName: "Durin",
           characterRarity: 5,
           characterDescription: "A dragon born from M's pen, who came to alight in the human world. His 'story' continues to unfold.",
@@ -104,11 +104,11 @@
         {
           id: 2,
           name: "Honkai Star Rail",
-          image: "/src/HSR.png",
+          image: "./src/HSR.png",
           badge: "NEW",
           badgeColor: "bg-blue-600",
-          backgroundImage: "/src/BG_HSR.png",
-          characterImage: "/src/Character_Honkai.png",
+          backgroundImage: "./src/BG_HSR.png",
+          characterImage: "./src/Character_Honkai.png",
           characterName: "Stellar Jade",
           characterRarity: 5,
           characterDescription: "Premium currency for interstellar adventures",
@@ -122,11 +122,11 @@
         {
           id: 3,
           name: "Zenless Zone Zero",
-          image: "/src/ZZZ.png",
+          image: "./src/ZZZ.png",
           badge: "TRENDING",
           badgeColor: "bg-orange-500",
-          backgroundImage: "/src/BG_ZZZ.png",
-          characterImage: "/src/Character_Zenless.png",
+          backgroundImage: "./src/BG_ZZZ.png",
+          characterImage: "./src/Character_Zenless.png",
           characterName: "Ellen Joe",
           characterRarity: 5,
           characterDescription: "An elite agent ready for any challenge",
@@ -141,11 +141,11 @@
       const GAMES = [
         { id: 1, 
           name: "Genshin Impact", 
-          image: "/src/Genshin.png",
-          backgroundImage: "/src/BG_Genshin.png",
+          image: "./src/Genshin.png",
+          backgroundImage: "./src/BG_Genshin.png",
           description: "Primogems are the main premium currency in Genshin Impact, used to purchase 'Fates' for wishing on character and weapon banners, replenish stamina (Original Resin), and occasionally buy other items and upgrades in the game" ,
           characterName: "Durin",
-          characterImage:"/src/DurinPicture.png",
+          characterImage:"./src/DurinPicture.png",
           characterRarity: 5,
           characterDescription: "A dragon born from M's pen, who came to alight in the human world. His 'story' continues to unfold.",
           packages: [
@@ -159,11 +159,11 @@
           ],
           servers: ["Asia", "America", "Europe"]},
         { id: 2, name: "Honkai Star Rail",
-          image: "/src/HSR.png",
-          backgroundImage: "/src/BG_HSR.png",
+          image: "./src/HSR.png",
+          backgroundImage: "./src/BG_HSR.png",
           description: "Primogems are the main premium currency in Genshin Impact, used to purchase 'Fates' for wishing on character and weapon banners, replenish stamina (Original Resin), and occasionally buy other items and upgrades in the game",
           characterName: "Durin",
-          characterImage:"/src/DurinPicture.png",
+          characterImage:"./src/DurinPicture.png",
           characterRarity: 5,
           characterDescription: "A dragon born from M's pen, who came to alight in the human world. His 'story' continues to unfold.",
           packages: [
@@ -178,11 +178,11 @@
           servers: ["Asia", "America", "Europe"]},
           
         { id: 3, name: "Zenless Zone Zero", 
-          image: "/src/ZZZ.png",
-          backgroundImage: "/src/BG_ZZZ.png",
+          image: "./src/ZZZ.png",
+          backgroundImage: "./src/BG_ZZZ.png",
           description: "Primogems are the main premium currency in Genshin Impact, used to purchase 'Fates' for wishing on character and weapon banners, replenish stamina (Original Resin), and occasionally buy other items and upgrades in the game",
           characterName: "Durin",
-          characterImage:"/src/DurinPicture.png",
+          characterImage:"./src/DurinPicture.png",
           characterRarity: 5,
           characterDescription: "A dragon born from M's pen, who came to alight in the human world. His 'story' continues to unfold.",
           packages: [
@@ -418,7 +418,7 @@
         );
       }
       
-      function CombinedGamePage({ game, onBack }) {
+      function CombinedGamePage({ game, onBack, user }) {
         // Apply the background to the outer wrapper for both game detail and shop sections
         // Use backgroundImage from the selected game
         const bgUrl = game.backgroundImage;
@@ -440,7 +440,7 @@
           document.getElementById('shop-section').scrollIntoView({ behavior: 'smooth' });
         };
         
-        const handleProceedToPayment = () => {
+        const handleProceedToPayment = async () => {
           if (!selectedPackage) {
             alert('Please select a package first!');
             return;
@@ -449,7 +449,28 @@
             alert('Please enter your UID!');
             return;
           }
-          alert(`Processing payment for ${selectedPackage.special || selectedPackage.amount + ' Crystals'} - ${selectedPackage.price}\nUID: ${uid}\nServer: ${server}`);
+          const transactionData = {
+            userEmail: user ? user.email : 'guest', 
+            gameName: game.name,
+            packageAmount: selectedPackage.amount || selectedPackage.special,
+            price: selectedPackage.price,
+            uid: uid,
+            server: server
+          };
+
+          try {
+            const response = await fetch ('http://localhost:5000/api/transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(transactionData)
+          });
+          const data = await response.json();
+            if(data.success) {
+              alert(`Success! Payment processed for ${selectedPackage.price}`);
+            }
+          } catch (error) {
+            alert("Transaction failed to save");
+          }
         };
         
         return (
@@ -1104,28 +1125,51 @@
         };
         
         // Handle user login
-        const handleLogin = (email, password) => {
-          const foundUser = registeredUsers.find(
-            u => u.email === email && u.password === password
-          );
-          if (foundUser) {
-            setUser({ username: foundUser.username, email: foundUser.email });
-            return true;
-          }
-          return false;
-        };
-        
-        // Handle user registration
-        const handleRegister = (username, email, password) => {
-          const existingUser = registeredUsers.find(u => u.email === email);
-          if (existingUser) {
+        const handleLogin = async (email, password) => {
+          try {
+            const response = await fetch('http://localhost:5000/api/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json'},
+              body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if(data.success){
+              setUser(data.user);
+              return true;
+            } else {
+              return false
+            }
+          } catch(error){
+            console.error("Error: ", error);
             return false;
           }
-          const newUser = { username, email, password };
-          setRegisteredUsers([...registeredUsers, newUser]);
-          setUser({ username, email });
-          return true;
-        };
+        }
+        
+        // Handle user registration
+        const handleRegister = async (username, email, password) => {
+          try {
+            const response = await fetch('http://localhost:5000/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json'},
+              body: JSON.stringify({ username, email, password })
+            });
+            const data = await response.json();
+
+            if(data.success){
+              setUser(data.user);
+              return true;
+            } else {
+              alert(data.message); //ini message di backend
+              return false
+            }
+          } catch(error){
+            console.error("Error: ", error);
+            alert('cannot connect to server');
+            return false;
+          }
+        }
         
         // Handle logout
         const handleLogout = () => {
