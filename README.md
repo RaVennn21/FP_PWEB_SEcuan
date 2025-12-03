@@ -1,4 +1,8 @@
 # FP_PWEB_SEcuan
+
+# Kadek Angga Wistara 5053241025
+# Oktaviann Ramadhan 5053241025
+
 ---
 
 # 📌 API Endpoints Overview (CRUD Documentation)
@@ -8,7 +12,7 @@ Authentication is handled using **JWT (Bearer tokens)** for secure access to pro
 
 ---
 
-# ## 1. 🔐 User API (CRUD + Authentication)
+# 1. User API (CRUD + Authentication)
 
 **Model:** `User`
 Fields: `username`, `email`, `password (hashed)`, `dateCreated`
@@ -56,7 +60,7 @@ DELETE /api/users/:id
 
 ---
 
-# ## 2. 💳 Transaction API (CRUD + JWT Protected)
+# 2. Transaction API (CRUD + JWT Protected)
 
 **Model:** `Transaction`
 Fields: `userEmail`, `gameName`, `packageAmount`, `price`, `uid`, `server`, `date`
@@ -100,7 +104,7 @@ DELETE /api/transaction/:id
 
 ---
 
-# ## 3. 🎮 Game API (CRUD)
+# 3. Game API (CRUD)
 
 **Model:** `Game`
 Fields: `name`, `description`, `bannerImageUrl`, `cardImageUrl`, `servers[]`, `createdAt`
@@ -137,7 +141,7 @@ DELETE /api/games/:id
 
 ---
 
-# ## 4. 🧑‍🎨 Character API (CRUD)
+# 4. Character API (CRUD)
 
 **Model:** `Character`
 Fields: `game (ObjectId)`, `name`, `title`, `role`, `description`, `imageUrl`, `createdAt`
@@ -175,7 +179,7 @@ DELETE /api/characters/:id
 
 ---
 
-# ## 🔒 Authentication Summary
+# Authentication Summary
 
 ### Login and register generate JWT:
 
@@ -192,7 +196,7 @@ Authorization: Bearer <TOKEN>
 
 ---
 
-# ## ✔️ CRUD Summary Table
+# CRUD Summary Table
 
 | Resource        | CREATE            | READ ALL         | READ ONE             | UPDATE               | DELETE                  | AUTH REQUIRED     |
 | --------------- | ----------------- | ---------------- | -------------------- | -------------------- | ----------------------- | ----------------- |
@@ -203,11 +207,3 @@ Authorization: Bearer <TOKEN>
 
 ---
 
-If you'd like, I can also add:
-
-✅ ERD diagram
-✅ Sequence diagrams
-✅ Installation steps (Node, MongoDB, npm install)
-✅ Descriptions for frontend–backend interaction
-
-Just tell me!
