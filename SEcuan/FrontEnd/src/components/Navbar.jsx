@@ -6,12 +6,11 @@ export default function Navbar({ currentPage, onNavigate, user, onLogout }) {
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
-  const auth = useAuth();
+
   const navItems = [
     { id: 'home', label: 'Home', icon: '🏠' },
     ...(user ? [{ id: 'transaction', label: 'Transactions', icon: '📋' }] : []),
     { id: 'account', label: 'Account', icon: '👤' },
-    // Admin link - only show if user is admin
     ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: '⚙️', adminOnly: true }] : []),
   ];
 
@@ -20,20 +19,25 @@ export default function Navbar({ currentPage, onNavigate, user, onLogout }) {
     setMobileMenuOpen(false);
   };
 
+  const handleLogout = () => {
+    onLogout();
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <nav className="bg-gradient-to-r from-slate-800/50 to-purple-800/50 border-b border-white/10 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+    <nav className="bg-slate-800/50 backdrop-blur border-b border-white/10 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="text-2xl">SEcuan</div>
-            <span className="text-lg font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent hidden sm:inline">
-              Game Store
-            </span>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
+              SEcuan
+            </h1>
+            <p className="text-gray-400 text-sm hidden md:block">Game Store</p>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-2">
             {navItems.map((item) => (
               <button
                 key={item.id}
@@ -47,8 +51,8 @@ export default function Navbar({ currentPage, onNavigate, user, onLogout }) {
                 }`}
                 title={item.adminOnly ? 'Admin Only' : ''}
               >
-                <span>{item.icon}</span>
-                <span className="text-sm">{item.label}</span>
+                {item.icon}
+                {item.label}
               </button>
             ))}
           </div>
@@ -57,21 +61,16 @@ export default function Navbar({ currentPage, onNavigate, user, onLogout }) {
           <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
-                    {user.username.charAt(0).toUpperCase()}
+                <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold text-sm">
+                    {user.username?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <span className="text-sm text-gray-300">
-                    {user.username}
-                    {isAdmin && <span className="ml-1 text-red-400 font-semibold">(Admin)</span>}
-                  </span>
+                  <span className="text-white text-sm font-semibold">{user.username}</span>
+                  {isAdmin && <span className="text-red-400 text-xs bg-red-500/20 px-2 py-1 rounded">Admin</span>}
                 </div>
+
                 <button
-                  onClick={() => {
-                  auth.logout();
-                  onLogout();
-                  onBack();
-                }}
+                  onClick={handleLogout}
                   className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg font-semibold transition-all text-sm"
                 >
                   Logout
@@ -90,17 +89,15 @@ export default function Navbar({ currentPage, onNavigate, user, onLogout }) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-gray-400 hover:text-white transition"
+            className="md:hidden text-gray-400 hover:text-white transition text-xl"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            ☰
           </button>
         </div>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/10 py-4 space-y-2">
+          <div className="md:hidden mt-4 space-y-2 pb-4">
             {navItems.map((item) => (
               <button
                 key={item.id}
@@ -113,30 +110,28 @@ export default function Navbar({ currentPage, onNavigate, user, onLogout }) {
                     : 'text-gray-400 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-                {item.adminOnly && <span className="ml-auto text-xs bg-red-500/20 px-2 py-1 rounded text-red-400">ADMIN</span>}
+                {item.icon}
+                {item.label}
+                {item.adminOnly && <span className="text-red-400 text-xs ml-auto">ADMIN</span>}
               </button>
             ))}
 
+            <hr className="border-white/10 my-2" />
+
             {user ? (
-              <div className="border-t border-white/10 pt-4 space-y-2">
-                <div className="flex items-center gap-2 px-4 py-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
-                    {user.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-300">{user.username}</p>
-                    {isAdmin && <p className="text-xs text-red-400 font-semibold">Admin Account</p>}
-                  </div>
+              <>
+                <div className="px-4 py-2 text-gray-300 text-sm">
+                  <p className="font-semibold">{user.username}</p>
+                  <p className="text-gray-400">{user.email}</p>
+                  {isAdmin && <p className="text-red-400 text-xs mt-1">Admin Account</p>}
                 </div>
                 <button
-                  onClick={onLogout}
-                  className="w-full px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg font-semibold transition-all text-sm"
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg font-semibold transition-all"
                 >
                   Logout
                 </button>
-              </div>
+              </>
             ) : (
               <button
                 onClick={() => handleNavigate('account')}

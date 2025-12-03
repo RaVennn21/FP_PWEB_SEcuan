@@ -1,143 +1,255 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from "react";
 
 const AuthContext = createContext();
 
-// Define admin emails
-const ADMIN_EMAILS = ['admin@example.com', 'admin@gamerecharge.com'];
+const API_BASE = "http://localhost:5000/api";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [transactions, setTransactions] = useState([]);
+  const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const register = (username, email, password) => {
-    if (users.find((u) => u.email === email)) {
-      return { success: false, message: 'Email already registered' };
+  // Load from localStorage on first mount
+  useEffect(() => {
+    const saved = localStorage.getItem("auth");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setUser(parsed.user || null);
+        setToken(parsed.token || null);
+      } catch (e) {
+        console.error("Failed to parse auth from localStorage", e);
+      }
     }
+    setLoading(false);
+  }, []);
 
-    // Check if email is admin email
-    const isAdmin = ADMIN_EMAILS.includes(email);
+  // Save to localStorage whenever user/token change
+  useEffect(() => {
+    if (user && token) {
+      localStorage.setItem("auth", JSON.stringify({ user, token }));
+    } else {
+      localStorage.removeItem("auth");
+    }
+  }, [user, token]);
 
-    const newUser = {
-      id: users.length + 1,
-      username,
-      email,
-      password,
-      role: isAdmin ? 'admin' : 'user',
-      createdAt: new Date().toISOString(),
-    };
+  // REGISTER
+  const register = async (username, email, password) => {
+    try {
+      const res = await fetch(`${API_BASE}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
+      });
 
-    setUsers((prev) => [...prev, newUser]);
-    setUser(newUser);
-    return { success: true, message: 'Registration successful' };
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, message: data.message || "Register failed" };
+      }
+
+      // Backend returns user + token after registration
+      if (data.token && data.user) {
+        setUser(data.user);
+        setToken(data.token);
+      }
+
+      return { success: true, message: data.message || "Register success" };
+    } catch (err) {
+      console.error("Register error:", err);
+      return { success: false, message: "Network error during register" };
+    }
   };
 
-  const login = (email, password) => {
-    const found = users.find((u) => u.email === email && u.password === password);
-    if (!found) return { success: false, message: 'Invalid email or password' };
-    setUser(found);
-    return { success: true, message: 'Login successful' };
+  // LOGIN
+  const login = async (email, password) => {
+    try {
+      const res = await fetch(`${API_BASE}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return { success: false, message: data.message || "Login failed" };
+      }
+
+      // Backend returns { user, token }
+      setUser(data.user);
+      setToken(data.token);
+
+      return { success: true, message: data.message || "Login success" };
+    } catch (err) {
+      console.error("Login error:", err);
+      return { success: false, message: "Network error during login" };
+    }
   };
 
-  const logout = () => setUser(null);
-
-  // Change password
-  const changePassword = (currentPassword, newPassword) => {
-    if (!user) return { success: false, message: 'User not logged in' };
-    
-    if (user.password !== currentPassword) {
-      return { success: false, message: 'Current password is incorrect' };
-    }
-
-    if (newPassword.length < 8) {
-      return { success: false, message: 'Password must be at least 8 characters' };
-    }
-
-    const updatedUser = { ...user, password: newPassword };
-    setUser(updatedUser);
-    setUsers(users.map(u => u.id === user.id ? updatedUser : u));
-    return { success: true, message: 'Password changed successfully' };
-  };
-
-  // Delete account
-  const deleteAccount = (password) => {
-    if (!user) return { success: false, message: 'User not logged in' };
-    
-    if (user.password !== password) {
-      return { success: false, message: 'Password is incorrect' };
-    }
-
-    setUsers(users.filter(u => u.id !== user.id));
+  const logout = () => {
     setUser(null);
-    return { success: true, message: 'Account deleted successfully' };
+    setToken(null);
   };
 
-  // Add transaction
-  const addTransaction = (transactionData) => {
-    const newTransaction = {
-      id: transactions.length + 1,
-      ...transactionData,
-      userId: user?.id,
-      createdAt: new Date().toISOString(),
-    };
-    setTransactions((prev) => [...prev, newTransaction]);
-    return newTransaction;
+  const checkAdminStatus = async () => {
+    if (!token) return { isAdmin: false };
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/status`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      return { isAdmin: data.isAdmin || false };
+    } catch (err) {
+      console.error("Admin check error:", err);
+      return { isAdmin: false };
+    }
   };
 
-  // Update transaction status
-  const updateTransactionStatus = (transactionId, status) => {
-    setTransactions((prev) =>
-      prev.map((tx) =>
-        tx.id === transactionId ? { ...tx, status, updatedAt: new Date().toISOString() } : tx
-      )
-    );
-    return { success: true, message: 'Transaction status updated' };
-  };
-
-  // Cancel transaction
-  const cancelTransaction = (transactionId) => {
-    const transaction = transactions.find((tx) => tx.id === transactionId);
-    
-    if (!transaction) {
-      return { success: false, message: 'Transaction not found' };
+  // CREATE TRANSACTION (protected)
+  const createTransaction = async (transactionData) => {
+    if (!token) {
+      return { success: false, message: "Not authenticated" };
     }
 
-    if (transaction.status === 'completed') {
-      return { success: false, message: 'Cannot cancel completed transaction' };
-    }
+    try {
+      const res = await fetch(`${API_BASE}/transaction`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(transactionData),
+      });
 
-    updateTransactionStatus(transactionId, 'cancelled');
-    return { success: true, message: 'Transaction cancelled successfully' };
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return {
+          success: false,
+          message: data.message || "Transaction failed",
+        };
+      }
+
+      return {
+        success: true,
+        message: data.message || "Transaction success",
+        data,
+      };
+    } catch (err) {
+      console.error("Transaction error:", err);
+      return { success: false, message: "Network error during transaction" };
+    }
   };
 
-  // Get user transactions
-  const getUserTransactions = () => {
-    if (!user) return [];
-    return transactions.filter((tx) => tx.userId === user.id);
+  // GET TRANSACTIONS FOR CURRENT USER
+  const fetchUserTransactions = async () => {
+    if (!token) {
+      return { success: false, message: "Not authenticated", data: [] };
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/transaction`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        return {
+          success: false,
+          message: data.message || "Failed to fetch transactions",
+          data: [],
+        };
+      }
+
+      return { success: true, data: data.data || [] };
+    } catch (err) {
+      console.error("Fetch transactions error:", err);
+      return {
+        success: false,
+        message: "Network error while fetching transactions",
+        data: [],
+      };
+    }
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    if (!token) return { success: false, message: "Not authenticated" };
+
+    try {
+      const res = await fetch(`${API_BASE}/changePassword`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await res.json();
+      return res.ok && data.success
+        ? { success: true, message: data.message }
+        : { success: false, message: data.message };
+    } catch (err) {
+      console.error(err);
+      return { success: false, message: "Network error" };
+    }
+  };
+
+  const deleteAccount = async (password) => {
+    if (!token) return { success: false, message: "Not authenticated" };
+
+    try {
+      const res = await fetch(`${API_BASE}/deleteAccount`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem("auth");
+        return { success: true, message: data.message };
+      }
+      return { success: false, message: data.message };
+    } catch (err) {
+      console.error(err);
+      return { success: false, message: "Network error" };
+    }
   };
 
   const value = {
     user,
-    users,
-    transactions,
+    token,
+    loading,
     register,
     login,
     logout,
+    createTransaction,
+    fetchUserTransactions,
     changePassword,
     deleteAccount,
-    addTransaction,
-    updateTransactionStatus,
-    cancelTransaction,
-    getUserTransactions,
+    checkAdminStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
 };

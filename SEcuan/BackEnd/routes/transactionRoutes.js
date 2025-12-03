@@ -26,8 +26,6 @@ function verifyToken(req, res, next) {
   });
 }
 
-
-
 // CREATE TRANSACTION
 router.post('/transaction', verifyToken, async (req, res) => {
   try {
@@ -49,8 +47,6 @@ router.post('/transaction', verifyToken, async (req, res) => {
     res.status(500).json({ success: false, message: 'Transaction failed' });
   }
 });
-
-
 
 // READ ALL TRANSACTIONS
 router.get('/transaction', verifyToken, async (req, res) => {
@@ -82,7 +78,7 @@ router.get('/transaction/:id',  verifyToken,  async (req, res) => {
 });
 
 // UPDATE TRANSACTION
-router.put('/transaction/:id', verifyToken,  async (req, res) => {
+router.put('/transaction/:id', /*verifyToken*/  async (req, res) => {
   try {
     const updatedTransaction = await Transaction.findByIdAndUpdate(
       req.params.id,
@@ -106,7 +102,7 @@ router.put('/transaction/:id', verifyToken,  async (req, res) => {
 });
 
 // DELETE TRANSACTION
-router.delete('/transaction/:id', verifyToken, async (req, res) => {
+router.delete('/transaction/:id', /*verifyToken*/ async (req, res) => {
   try {
     const deletedTransaction = await Transaction.findByIdAndDelete(req.params.id);
 

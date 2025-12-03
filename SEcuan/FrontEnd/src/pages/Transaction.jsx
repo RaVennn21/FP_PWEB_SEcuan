@@ -1,106 +1,121 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
 import TransactionDetailPage from './TransactionDetail.jsx';
 
-export default function TransactionPage({ onBack, user }) {
-  // Sample transaction data (replace with API call later)
-  const [transactions] = useState([
-    {
-      id: 1,
-      game: 'Genshin Impact',
-      amount: '300 Primogems',
-      price: 'Rp. 73.000',
-      date: '2025-12-03',
-      time: '14:30',
-      status: 'completed',
-      uid: '501234567',
-      server: 'Asia',
-    },
-    {
-      id: 2,
-      game: 'Honkai Star Rail',
-      amount: '50 Stellar Jade',
-      price: 'Rp. 12.000',
-      date: '2025-12-02',
-      time: '10:15',
-      status: 'completed',
-      uid: '601234567',
-      server: 'Global',
-    },
-    {
-      id: 3,
-      game: 'Zenless Zone Zero',
-      amount: '80 Coins',
-      price: 'Rp. 20.000',
-      date: '2025-12-01',
-      time: '16:45',
-      status: 'completed',
-      uid: '701234567',
-      server: 'Global',
-    },
-    {
-      id: 4,
-      game: 'Genshin Impact',
-      amount: '980 Primogems',
-      price: 'Rp. 239.000',
-      date: '2025-11-30',
-      time: '09:20',
-      status: 'completed',
-      uid: '501234567',
-      server: 'Asia',
-    },
-    {
-      id: 5,
-      game: 'Honkai Star Rail',
-      amount: 'Welkin Moon',
-      price: 'Rp. 65.000',
-      date: '2025-11-28',
-      time: '13:00',
-      status: 'pending',
-      uid: '601234567',
-      server: 'Global',
-    },
-    {
-      id: 6,
-      game: 'Genshin Impact',
-      amount: '60 Primogems',
-      price: 'Rp. 16.000',
-      date: '2025-11-27',
-      time: '11:30',
-      status: 'completed',
-      uid: '501234567',
-      server: 'America',
-    },
-  ]);
-
+export default function TransactionPage({ onBack }) {
+  const { user, fetchUserTransactions } = useAuth();
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchGame, setSearchGame] = useState('');
-  const [selectedTransactionId, setSelectedTransactionId] = useState(null);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
 
-  // Filter transactions
-  const filteredTransactions = transactions.filter((tx) => {
-    const statusMatch = filterStatus === 'all' || tx.status === filterStatus;
-    const gameMatch = tx.game.toLowerCase().includes(searchGame.toLowerCase());
-    return statusMatch && gameMatch;
-  });
+  // Load transactions from backend when page opens / user changes
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError('');
 
-  // Calculate totals
+      // If not logged in, nothing to load
+      if (!user) {
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetchUserTransactions(); // from AuthContext
+        if (res.success) {
+          const raw = res.data || [];
+
+          // Map backend fields -> UI fields
+          const mapped = raw.map((tx) => {
+            const created = tx.date || tx.createdAt;
+            let date = '';
+            let time = '';
+
+            if (created) {
+              const d = new Date(created);
+              if (!isNaN(d)) {
+                date = d.toLocaleDateString('id-ID');
+                time = d.toLocaleTimeString('id-ID', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+              }
+            }
+
+            return {
+              id: tx._id,
+              game: tx.gameName,
+              amount: tx.packageAmount,
+              price: tx.price,
+              date,
+              time,
+              status: tx.status || 'completed',
+              uid: tx.uid,
+              server: tx.server,
+            };
+          });
+
+          setTransactions(mapped);
+        } else {
+          setError(res.message || 'Failed to load transactions');
+        }
+      } catch (e) {
+        console.error('Fetch error:', e);
+        setError('Failed to load transactions');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [user, fetchUserTransactions]);
+
+  const normalizePriceToNumber = (price) => {
+    if (!price) return 0;
+    if (typeof price === 'number') return price;
+    const digits = price.toString().replace(/[^0-9]/g, '');
+    return digits ? parseInt(digits, 10) : 0;
+  };
+
+  const formatRupiah = (num) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0,
+    }).format(num);
+
+  // Stats
   const totalSpent = transactions
     .filter((tx) => tx.status === 'completed')
-    .reduce((sum, tx) => {
-      const amount = parseInt(tx.price.replace(/[^0-9]/g, ''));
-      return sum + amount;
-    }, 0);
+    .reduce((sum, tx) => sum + normalizePriceToNumber(tx.price), 0);
+
+  const completedCount = transactions.filter((tx) => tx.status === 'completed').length;
+  const pendingCount = transactions.filter((tx) => tx.status === 'pending').length;
+  const failedCount = transactions.filter((tx) => tx.status === 'failed').length;
+
+  // Filters
+  const filteredTransactions = transactions
+    .filter((tx) => (filterStatus === 'all' ? true : tx.status === filterStatus))
+    .filter((tx) =>
+      searchGame.trim()
+        ? tx.game.toLowerCase().includes(searchGame.trim().toLowerCase())
+        : true
+    );
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-500/10 border-green-500/30 text-green-400';
+        return 'bg-green-500/10 border-green-500/40 text-green-300';
       case 'pending':
-        return 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400';
+        return 'bg-yellow-500/10 border-yellow-500/40 text-yellow-300';
       case 'failed':
-        return 'bg-red-500/10 border-red-500/30 text-red-400';
+        return 'bg-red-500/10 border-red-500/40 text-red-300';
       default:
-        return 'bg-gray-500/10 border-gray-500/30 text-gray-400';
+        return 'bg-slate-500/10 border-slate-500/40 text-slate-300';
     }
   };
 
@@ -117,232 +132,156 @@ export default function TransactionPage({ onBack, user }) {
     }
   };
 
-  // Show transaction detail page if selected
-  if (selectedTransactionId) {
-    const selectedTransaction = transactions.find((tx) => tx.id === selectedTransactionId);
+  const handleOpenDetail = (tx) => {
+    setSelectedTransaction(tx);
+  };
+
+  const handleBackFromDetail = () => {
+    setSelectedTransaction(null);
+  };
+
+  // If viewing detail → show detail page
+  if (selectedTransaction) {
     return (
       <TransactionDetailPage
         transaction={selectedTransaction}
-        onBack={() => setSelectedTransactionId(null)}
+        onBack={handleBackFromDetail}
         user={user}
       />
     );
   }
 
+  // Check if user is logged in
+  if (!user) {
+    return (
+      <div className="max-w-4xl mx-auto text-center py-12">
+        <p className="text-gray-400 text-lg">Please log in to view your transactions</p>
+        <button
+          onClick={onBack}
+          className="mt-4 px-6 py-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-pink-700 transition-all"
+        >
+          Back to Home
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800/50 to-purple-800/50 border-b border-white/10 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onBack}
-                className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-                Transaction History
-              </h1>
-            </div>
-            <p className="text-gray-400 text-sm">{user?.username || 'Guest'}</p>
-          </div>
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-white mb-2">My Transactions</h2>
+        <p className="text-gray-400">
+          Signed in as <span className="text-pink-400">{user.username || user.email}</span>
+        </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-slate-800/50 border border-white/10 rounded-lg p-6">
+          <p className="text-gray-400 text-sm font-semibold mb-2">Total Spent</p>
+          <p className="text-2xl font-bold text-pink-400">{formatRupiah(totalSpent)}</p>
+        </div>
+        <div className="bg-slate-800/50 border border-white/10 rounded-lg p-6">
+          <p className="text-gray-400 text-sm font-semibold mb-2">Completed</p>
+          <p className="text-2xl font-bold text-green-400">{completedCount}</p>
+        </div>
+        <div className="bg-slate-800/50 border border-white/10 rounded-lg p-6">
+          <p className="text-gray-400 text-sm font-semibold mb-2">Pending</p>
+          <p className="text-2xl font-bold text-yellow-400">{pendingCount}</p>
+        </div>
+        <div className="bg-slate-800/50 border border-white/10 rounded-lg p-6">
+          <p className="text-gray-400 text-sm font-semibold mb-2">Failed</p>
+          <p className="text-2xl font-bold text-red-400">{failedCount}</p>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Total Transactions */}
-          <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:border-pink-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm mb-1">Total Transactions</p>
-                <p className="text-3xl font-bold text-white">{transactions.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">📊</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Completed */}
-          <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:border-green-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm mb-1">Completed</p>
-                <p className="text-3xl font-bold text-green-400">
-                  {transactions.filter((tx) => tx.status === 'completed').length}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">✓</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Spent */}
-          <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:border-purple-500/50 transition-all">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm mb-1">Total Spent</p>
-                <p className="text-2xl font-bold text-purple-400">
-                  Rp. {totalSpent.toLocaleString('id-ID')}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">💰</span>
-              </div>
-            </div>
-          </div>
+      {/* Filters */}
+      <div className="mb-6 flex gap-4 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          <input
+            type="text"
+            placeholder="Search game..."
+            value={searchGame}
+            onChange={(e) => setSearchGame(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
+          />
         </div>
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
+        >
+          <option value="all">All Status</option>
+          <option value="completed">Completed</option>
+          <option value="pending">Pending</option>
+          <option value="failed">Failed</option>
+        </select>
+      </div>
 
-        {/* Filters & Search */}
-        <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6 backdrop-blur-sm mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search by Game */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">
-                Search Game
-              </label>
-              <input
-                type="text"
-                placeholder="Search by game name..."
-                value={searchGame}
-                onChange={(e) => setSearchGame(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
-              />
-            </div>
-
-            {/* Filter by Status */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">
-                Filter Status
-              </label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
-              >
-                <option value="all">All Transactions</option>
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-                <option value="failed">Failed</option>
-              </select>
-            </div>
-
-            {/* Reset Button */}
-            <div className="flex items-end">
-              <button
-                onClick={() => {
-                  setFilterStatus('all');
-                  setSearchGame('');
-                }}
-                className="w-full px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-white rounded-lg font-semibold transition-all"
-              >
-                Reset Filters
-              </button>
-            </div>
-          </div>
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
+          {error}
         </div>
+      )}
 
-        {/* Transactions List */}
-        <div className="space-y-4">
-          {filteredTransactions.length > 0 ? (
-            filteredTransactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="bg-slate-800/50 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:border-pink-500/50 transition-all"
-              >
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  {/* Left Side - Transaction Details */}
-                  <div className="flex-1 w-full">
-                    <div className="flex items-start gap-4">
-                      {/* Icon */}
-                      <div className="w-12 h-12 bg-gradient-to-br from-pink-500/20 to-purple-600/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-lg">🎮</span>
-                      </div>
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-8">
+          <p className="text-gray-400">Loading transactions...</p>
+        </div>
+      )}
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-bold text-white truncate">
-                            {tx.game}
-                          </h3>
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                              tx.status
-                            )}`}
-                          >
-                            {getStatusIcon(tx.status)}{' '}
-                            {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
-                          </span>
-                        </div>
-                        <p className="text-gray-400 text-sm mb-2">{tx.amount}</p>
-                        <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-                          <span>{tx.date}</span>
-                          <span>{tx.time}</span>
-                          <span>UID: {tx.uid}</span>
-                          <span>{tx.server}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+      {/* Transactions List */}
+      {!loading && filteredTransactions.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-400">
+            {transactions.length === 0 ? 'No transactions yet' : 'No transactions match your filter'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredTransactions.map((tx) => (
+            <button
+              key={tx.id}
+              onClick={() => handleOpenDetail(tx)}
+              className="w-full bg-slate-800/50 border border-white/10 rounded-lg p-4 text-left hover:bg-slate-800/80 transition-all group"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-white font-semibold group-hover:text-pink-400 transition-colors">
+                    {tx.game}
+                  </h3>
+                  <p className="text-gray-400 text-sm">
+                    UID: {tx.uid} • Server: {tx.server}
+                  </p>
+                  <p className="text-gray-500 text-xs mt-1">
+                    {tx.date} at {tx.time}
+                  </p>
+                </div>
 
-                  {/* Right Side - Price & Action */}
-                  <div className="flex items-center justify-between w-full md:w-auto gap-4 md:gap-6">
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-pink-400">{tx.price}</p>
-                      <p className="text-xs text-gray-500">Transaction ID: #{tx.id}</p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedTransactionId(tx.id)}
-                      className="px-6 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-lg font-semibold transition-all flex-shrink-0"
-                    >
-                      View Details
-                    </button>
-                  </div>
+                <div className="text-right">
+                  <p className="text-white font-semibold">{tx.amount}</p>
+                  <p className="text-pink-400 font-bold">{tx.price}</p>
+                  <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(tx.status)}`}>
+                    {getStatusIcon(tx.status)} {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                  </span>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-12 backdrop-blur-sm text-center">
-              <p className="text-gray-400 text-lg mb-2">No transactions found</p>
-              <p className="text-gray-500 text-sm">
-                Try adjusting your filters or search criteria
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Empty State Help */}
-        {filteredTransactions.length === 0 && transactions.length > 0 && (
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => {
-                setFilterStatus('all');
-                setSearchGame('');
-              }}
-              className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all"
-            >
-              Reset Filters
             </button>
-          </div>
-        )}
+          ))}
+        </div>
+      )}
+
+      {/* Back Button */}
+      <div className="mt-8">
+        <button
+          onClick={onBack}
+          className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all"
+        >
+          ← Back
+        </button>
       </div>
     </div>
   );

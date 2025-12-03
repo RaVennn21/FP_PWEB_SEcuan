@@ -37,7 +37,7 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Sign in handler
-  const handleSignIn = (e) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -53,7 +53,8 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
       return;
     }
 
-    const result = auth.login(signInData.email, signInData.password);
+    const result = await auth.login(signInData.email, signInData.password);
+
     if (result.success) {
       setSuccessMessage('Sign in successful! Welcome back!');
       setTimeout(() => {
@@ -66,7 +67,7 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
   };
 
   // Register handler
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -102,9 +103,14 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
       return;
     }
 
-    const result = auth.register(registerData.username, registerData.email, registerData.password);
+    const result = await auth.register(
+      registerData.username,
+      registerData.email,
+      registerData.password
+    );
+
     if (result.success) {
-      setSuccessMessage('Registration successful! Signing you in...');
+      setSuccessMessage('Registration successful! Signing you in.');
       setTimeout(() => {
         setRegisterData({
           username: '',
@@ -116,16 +122,15 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
         setActiveTab('profile');
       }, 1500);
     } else {
-      setErrorMessage(result.message);
+      setErrorMessage(result.message || 'Registration failed');
     }
   };
 
   // Change password handler
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
-
     if (
       !changePasswordData.currentPassword ||
       !changePasswordData.newPassword ||
@@ -134,22 +139,18 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
       setErrorMessage('Please fill in all fields');
       return;
     }
-
     if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
       setErrorMessage('New passwords do not match');
       return;
     }
-
     if (changePasswordData.newPassword.length < 8) {
       setErrorMessage('Password must be at least 8 characters long');
       return;
     }
-
-    const result = auth.changePassword(
+    const result = await auth.changePassword(
       changePasswordData.currentPassword,
       changePasswordData.newPassword
     );
-
     if (result.success) {
       setSuccessMessage('Password changed successfully!');
       setTimeout(() => {
@@ -164,18 +165,17 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
     }
   };
 
+
   // Delete account handler
-  const handleDeleteAccount = (e) => {
+  const handleDeleteAccount = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
-
     if (!deleteAccountPassword) {
       setErrorMessage('Please enter your password');
       return;
     }
-
-    const result = auth.deleteAccount(deleteAccountPassword);
+    const result = await auth.deleteAccount(deleteAccountPassword);
     if (result.success) {
       setSuccessMessage('Account deleted successfully. Redirecting...');
       setTimeout(() => {
@@ -186,6 +186,7 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
       setErrorMessage(result.message);
     }
   };
+
 
   // User is logged in - show profile
   if (auth.user) {
@@ -259,8 +260,8 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2">Account Type</label>
                   <div className="px-4 py-3 rounded-lg bg-slate-700/50 border border-white/10">
-                    <span className={`font-semibold ${auth.user.role === 'admin' ? 'text-red-400' : 'text-blue-400'}`}>
-                      {auth.user.role === 'admin' ? '👑 Administrator' : '👤 Regular User'}
+                    <span className={`font-semibold ${auth.user.isAdmin ? 'text-red-400' : 'text-blue-400'}`}>
+                      {auth.user.isAdmin ? '👑 Administrator' : '👤 Regular User'}
                     </span>
                   </div>
                 </div>
@@ -476,13 +477,22 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Password</label>
-                <input
-                  type="password"
-                  value={signInData.password}
-                  onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={signInData.password}
+                    onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"
@@ -521,23 +531,41 @@ export default function AccountPage({ onBack, user, onLogin, onRegister, onLogou
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Password</label>
-                <input
-                  type="password"
-                  value={registerData.password}
-                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={registerData.password}
+                    onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Confirm Password</label>
-                <input
-                  type="password"
-                  value={registerData.confirmPassword}
-                  onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={registerData.confirmPassword}
+                    onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg bg-slate-700/50 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
+                </div>
               </div>
               <div className="flex items-center">
                 <input

@@ -13,35 +13,53 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 function AppInner() {
   const [page, setPage] = useState('home');
   const [selectedGame, setSelectedGame] = useState(GAMES[0]);
-  const { user, login, register, logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const openGame = (game) => {
     setSelectedGame(game);
     setPage('shop');
   };
 
+  const handleLogout = () => {
+    logout();
+    setPage('home');
+  };
+
+  const renderPage = () => {
+    switch (page) {
+      case 'home':
+        return <HomePage onSelectGame={openGame} />;
+      case 'shop':
+        return <ShopPage game={selectedGame} onBack={() => setPage('home')} />;
+      case 'account':
+        return <Account onBack={() => setPage('home')} />;
+      case 'transaction':
+        return <TransactionPage onBack={() => setPage('home')} />;
+      case 'admin':
+        return (
+          <AdminGuard user={user} onUnauthorized={() => setPage('home')}>
+            <AdminPage onBack={() => setPage('home')} user={user} />
+          </AdminGuard>
+        );
+      case 'payment':
+        return <Payment onBack={() => setPage('home')} />;
+      default:
+        return <HomePage onSelectGame={openGame} />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      <Navbar current={page} onNavigate={setPage} user={user} />
-      {page === 'home' && <HomePage onSelectGame={openGame} />}
-      {page === 'shop' && <ShopPage game={selectedGame} onBack={() => setPage('home')} />}
-      {page === 'account' && (
-        <Account
-          onBack={() => setPage('home')}
-          user={user}
-          onLogin={(e, p) => login(e, p).success}
-          onRegister={(u, e, p) => register(u, e, p).success}
-          onLogout={logout}
-        />
-      )}
-      {page === 'payment' && <Payment onBack={() => setPage('home')} />}
-      {page === 'transaction' && <TransactionPage onBack={() => setPage('home')} />}
-      {page === 'admin' && <AdminPage onBack={() => setPage('home')} />}
-      {page === 'admin' && (
-        <AdminGuard user={user} onUnauthorized={() => setPage('home')}>
-        <AdminPage onBack={() => setPage('home')} user={user} />
-        </AdminGuard>
-      )}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <Navbar
+        currentPage={page}
+        onNavigate={setPage}
+        user={user}
+        onLogout={handleLogout}
+      />
+
+      <main className="mt-8 px-4">
+        {renderPage()}
+      </main>
     </div>
   );
 }
@@ -53,4 +71,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
