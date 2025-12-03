@@ -1,7 +1,4 @@
 # FP_PWEB_SEcuan
-
-Here is a **clean, professional, copy-paste-ready Markdown section** for your `README.md` that explains every CRUD endpoint for all models in your project.
-
 ---
 
 # 📌 API Endpoints Overview (CRUD Documentation)
