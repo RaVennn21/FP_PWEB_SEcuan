@@ -1,7 +1,5 @@
-import genshinImg from '../asset/image/Genshin.png';
-import honkaiImg from '../asset/image/HSR.png';
-import zzzImg from '../asset/image/ZZZ.png';
-import bgGenshin from '../asset/image/BG_Genshin.jpeg';
+// Image imports
+import bgGenshin from '../asset/image/BG_Genshin.png';
 import bgHonkai from '../asset/image/BG_HSR.png';
 import bgZzz from '../asset/image/BG_ZZZ.png';
 import charGenshin from '../asset/image/DurinPicture.png';
@@ -13,7 +11,6 @@ export const GAMES = [
   {
     id: 1,
     name: 'Genshin Impact',
-    image: genshinImg,
     backgroundImage: bgGenshin,
     characterImage: charGenshin,
     characterName: 'Durin',
@@ -23,18 +20,17 @@ export const GAMES = [
     description: 'Explore a vast world filled with adventure and magic',
     servers: ['Asia', 'Europe', 'America'],
     packages: [
-      { id: 1, amount: '30 Primogems', price: 'Rp. 12.000', bonus: null },
-      { id: 2, amount: '60 Primogems', price: 'Rp. 24.000', bonus: null },
-      { id: 3, amount: '300 Primogems', special: true, price: 'Rp. 73.000', bonus: '30 extra' },
-      { id: 4, amount: '980 Primogems', special: true, price: 'Rp. 239.000', bonus: '110 extra' },
-      { id: 5, amount: 'Battle Pass', price: 'Rp. 90.000', bonus: null },
-      { id: 6, amount: 'Welkin Moon', price: 'Rp. 180.000', bonus: '300 total' },
+      { id: 1, amount: '60 Primogems', price: 'Rp. 16.000', bonus: null },
+      { id: 2, amount: '300 Primogems', price: 'Rp. 75.000', bonus: null },
+      { id: 3, amount: '980 Primogems', special: true, price: 'Rp. 239.000', bonus: '110 extra' },
+      { id: 4, amount: '1280 Primogems', special: true, price: 'Rp. 349.000', bonus: '320 extra' },
+      { id: 5, amount: 'Battle Pass', price: 'Rp. 130.000', bonus: null },
+      { id: 6, amount: 'Welkin Moon', price: 'Rp. 60.000', bonus: null },
     ],
   },
   {
     id: 2,
     name: 'Honkai Star Rail',
-    image: honkaiImg,
     backgroundImage: bgHonkai,
     characterImage: charGenshin,
     characterName: 'Seele',
@@ -42,7 +38,7 @@ export const GAMES = [
     badge: 'NEW',
     badgeColor: 'bg-purple-600',
     description: 'Journey through the stars and save the universe',
-    servers: ['Global', 'Asia', 'Bilibili'],
+    servers: ['Europe', 'Asia', 'America'],
     packages: [
       { id: 1, amount: '20 Stellar Jade', price: 'Rp. 15.000', bonus: null },
       { id: 2, amount: '50 Stellar Jade', price: 'Rp. 45.000', bonus: null },
@@ -54,7 +50,6 @@ export const GAMES = [
   {
     id: 3,
     name: 'Zenless Zone Zero',
-    image: zzzImg,
     backgroundImage: bgZzz,
     characterImage: charGenshin,
     characterName: 'Ellen Joe',
@@ -62,7 +57,7 @@ export const GAMES = [
     badge: 'TRENDING',
     badgeColor: 'bg-yellow-600',
     description: 'Enter a mysterious world and uncover its secrets',
-    servers: ['Global', 'China', 'Asia'],
+    servers: ['Europe', 'America', 'Asia'],
     packages: [
       { id: 1, amount: '30 Polychrome', price: 'Rp. 20.000', bonus: null },
       { id: 2, amount: '100 Polychrome', price: 'Rp. 65.000', bonus: null },
