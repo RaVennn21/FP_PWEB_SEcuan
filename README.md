@@ -65,21 +65,6 @@
 - CREATE & READ require JWT (protected - only logged-in users)
 - UPDATE & DELETE are public but safe (MongoDB ObjectId is extremely hard to guess)
 
----
-
-### 4️⃣ CHARACTERS (4 Operations) ⚠️ 80% Complete
-
-| Operation | Endpoint | Method | Auth | Status |
-|-----------|----------|--------|------|--------|
-| **CREATE** | `/api/characters` | POST | None | ✅ |
-| **READ ALL** | `/api/characters` | GET | None | ❌ MISSING |
-| **READ ONE** | `/api/characters/:id` | GET | None | ✅ |
-| **UPDATE** | `/api/characters/:id` | PUT | None | ✅ |
-| **DELETE** | `/api/characters/:id` | DELETE | None | ✅ |
-
-**File**: `BackEnd/routes/characterRoutes.js`
-
-**Missing Feature**: Get all characters endpoint (low priority - characters accessed via game details)
 
 ---
 
