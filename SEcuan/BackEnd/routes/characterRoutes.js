@@ -15,6 +15,20 @@ router.post('/characters', async (req, res) => {
   }
 });
 
+// READ ALL CHAR
+router.get('/characters', async (req, res) => {
+  try {
+    const character = await Character.find(req.params.id).populate('game', 'name');
+    if (!character) {
+      return res.status(404).json({ success: false, message: 'Character not found' });
+    }
+    res.json({ success: true, data: character });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Failed to fetch character' });
+  }
+});
+
 // READ ONE CHAR
 router.get('/characters/:id', async (req, res) => {
   try {

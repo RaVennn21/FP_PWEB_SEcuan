@@ -4,7 +4,8 @@ const jwt = require('jsonwebtoken');
 
 const Transaction = require('../models/transaction');
 
-const JWT_SECRET = 'jejemiagantengkayakrey';
+require('dotenv').config();
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // simple JWT  
 function verifyToken(req, res, next) {

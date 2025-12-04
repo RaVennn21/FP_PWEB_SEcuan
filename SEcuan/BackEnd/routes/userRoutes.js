@@ -4,7 +4,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 
-const JWT_SECRET = 'jejemiagantengkayakrey';
+require('dotenv').config();
+const JWT_SECRET = process.env.JWT_SECRET;
+
 
 // REGISTER (CREATE)
 router.post('/register', async (req, res) => {

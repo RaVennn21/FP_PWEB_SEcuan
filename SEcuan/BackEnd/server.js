@@ -9,6 +9,8 @@ const transactionRoutes = require('./routes/transactionRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const characterRoutes = require('./routes/characterRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const gameCardRoutes = require('./routes/gamecardRoutes');
+
 
 const app = express();
 const PORT = 5000;
@@ -30,6 +32,8 @@ app.use('/api', transactionRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', characterRoutes);
 app.use('/api', adminRoutes);
+app.use('/api/gamecards', gameCardRoutes);
+
 
 // server starto
 app.listen(PORT, () => {
