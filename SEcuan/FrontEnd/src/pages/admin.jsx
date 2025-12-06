@@ -5,18 +5,17 @@ const API_BASE = 'http://localhost:5000/api';
 
 export default function AdminPage({ onBack, user }) {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [users, setUsers] = useState([]);           // ← Now from DB, not hardcoded
-  const [games, setGames] = useState([]);
-  const [orders, setOrders] = useState([]);         // ← Now from DB, not hardcoded
+  const [users, setUsers] = useState([]);           
+  const [orders, setOrders] = useState([]);         
 
   const [showAddGame, setShowAddGame] = useState(false);
   const [newGame, setNewGame] = useState({ name: '', description: '', status: 'active' });
   const [editingGame, setEditingGame] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ==========================================
-  // 1️⃣ FETCH ALL GAMES
-  // ==========================================
+  
+  // FETCH ALL GAMES
+  
   const fetchAllGames = async () => {
     try {
       setLoading(true);
@@ -47,9 +46,8 @@ export default function AdminPage({ onBack, user }) {
     }
   };
 
-  // ==========================================
-  // 2️⃣ FETCH ALL TRANSACTIONS (Orders)
-  // ==========================================
+  // FETCH ALL TRANSACTIONS (Orders)
+  
   const fetchAllTransactions = async () => {
     try {
       const res = await fetch(`${API_BASE}/transactions`, {
@@ -71,9 +69,7 @@ export default function AdminPage({ onBack, user }) {
     }
   };
 
-  // ==========================================
-  // 3️⃣ FETCH ALL USERS (NEW)
-  // ==========================================
+// FETCH ALL USERS (NEW)
   const fetchAllUsers = async () => {
     try {
       const res = await fetch(`${API_BASE}/admin/users`, {
@@ -92,7 +88,7 @@ export default function AdminPage({ onBack, user }) {
           email: u.email,
           joined: new Date(u.dateCreated).toLocaleDateString('id-ID'),
           status: u.isAdmin ? 'admin' : 'active',
-          spent: 'Rp. 0', // Can calculate from transactions
+          spent: 'Rp. 0', 
           isAdmin: u.isAdmin,
         }));
         setUsers(formattedUsers);
@@ -105,9 +101,9 @@ export default function AdminPage({ onBack, user }) {
     }
   };
 
-  // ==========================================
-  // 4️⃣ CREATE GAME
-  // ==========================================
+  
+  // CREATE GAME
+  
   const handleAddGame = async () => {
     if (!newGame.name.trim()) {
       alert('❌ Please enter a game name');
@@ -166,9 +162,9 @@ export default function AdminPage({ onBack, user }) {
     }
   };
 
-  // ==========================================
-  // 5️⃣ UPDATE GAME
-  // ==========================================
+  
+  // UPDATE GAME
+  
   const handleSaveGame = async (updated) => {
     if (!updated.id) {
       alert('❌ Error: No game ID found');
@@ -227,9 +223,9 @@ export default function AdminPage({ onBack, user }) {
     }
   };
 
-  // ==========================================
-  // 6️⃣ DELETE GAME
-  // ==========================================
+  
+  // DELETE GAME
+  
   const deleteGame = async (id) => {
     if (!confirm('⚠️ Are you sure you want to delete this game? This cannot be undone.')) {
       return;
@@ -262,9 +258,9 @@ export default function AdminPage({ onBack, user }) {
     }
   };
 
-  // ==========================================
+  
   // CALCULATE REAL STATS
-  // ==========================================
+  
   const getGameStats = (gameName) => {
     const gameTransactions = orders.filter(o => o.gameName === gameName);
     const revenue = gameTransactions.reduce((sum, order) => {
@@ -278,9 +274,9 @@ export default function AdminPage({ onBack, user }) {
     };
   };
 
-  // ==========================================
+  
   // FETCH ALL DATA ON MOUNT (UPDATED)
-  // ==========================================
+  
   useEffect(() => {
     fetchAllGames();
     fetchAllTransactions();
